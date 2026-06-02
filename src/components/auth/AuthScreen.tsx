@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useSignIn, useSignUp } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Info } from "lucide-react";
+import { Eye, EyeOff, Info } from "lucide-react";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     isLoaded: signInLoaded,
@@ -163,6 +164,9 @@ export default function AuthScreen() {
 
               <input
                 type="text"
+                name="username"
+                id="username"
+                autoComplete="username"
                 placeholder="your_username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -175,19 +179,45 @@ export default function AuthScreen() {
                 Password
               </label>
 
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="auth-input w-full"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="auth-input w-full"
+                  autoComplete={
+                    mode === "login" ? "current-password" : "new-password"
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/70 hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && <div className="text-red-400 text-sm">{error}</div>}
 
+            {/* Clerk's CAPTCHA widget */}
+            <div
+              id="clerk-captcha"
+              data-cl-theme="auto"
+              data-cl-size="flexible"
+              data-cl-language="en-us"
+            />
+
             <button
-              disabled={loading}
+              disabled={loading || !signInLoaded || !signUpLoaded}
               className="w-full bg-accent text-black font-bold text-sm p-3 rounded-lg hover:opacity-90 transition"
             >
               {loading
