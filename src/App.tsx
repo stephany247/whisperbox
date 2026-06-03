@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import AuthScreen from "@/components/auth/AuthScreen";
 import Chat from "@/components/ChatWindow";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Sidebar from "./components/chat/SideBar";
 
 function App() {
   return (
@@ -14,7 +15,10 @@ function App() {
         path="/chat"
         element={
           <ProtectedRoute>
-            <Chat />
+            <div className="flex h-screen overflow-hidden">
+              <Sidebar />
+              <Chat />
+            </div>
           </ProtectedRoute>
         }
       />

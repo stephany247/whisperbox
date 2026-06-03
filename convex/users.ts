@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const createUser = mutation({
@@ -9,5 +9,12 @@ export const createUser = mutation({
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("users", args);
+  },
+});
+
+export const getUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("users").collect();
   },
 });

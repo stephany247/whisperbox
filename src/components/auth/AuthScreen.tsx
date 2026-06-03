@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSignIn, useSignUp } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Eye, EyeOff, Info } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function AuthScreen() {
     signUp,
     setActive: setActiveSignUp,
   } = useSignUp();
+  const { isSignedIn, isLoaded } = useAuth();
 
   const createUser = useMutation(api.users.createUser);
 
@@ -29,6 +31,12 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+  if (isLoaded && isSignedIn) {
+    navigate("/chat");
+  }
+}, [isLoaded, isSignedIn, navigate]);
+
   const handleLogin = async () => {
     try {
       if (!signInLoaded || !signIn) {
@@ -38,6 +46,11 @@ export default function AuthScreen() {
         identifier: username,
         password,
       });
+
+      if (isSignedIn) {
+        navigate("/chat");
+        return;
+      }
 
       if (result?.status === "complete") {
         await setActiveSignIn({
