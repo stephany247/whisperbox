@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSignIn, useSignUp } from "@clerk/clerk-react";
+import { useAuth, useSignIn, useSignUp } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Eye, EyeOff, Info } from "lucide-react";
-import { useAuth } from "@clerk/clerk-react";
+import {
+  exportPrivateKey,
+  exportPublicKey,
+  savePrivateKey,
+  generateKeyPair,
+} from "@/lib/crypto";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
@@ -32,10 +37,10 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-  if (isLoaded && isSignedIn) {
-    navigate("/chat");
-  }
-}, [isLoaded, isSignedIn, navigate]);
+    if (isLoaded && isSignedIn) {
+      navigate("/chat");
+    }
+  }, [isLoaded, isSignedIn, navigate]);
 
   const handleLogin = async () => {
     try {
@@ -75,14 +80,20 @@ export default function AuthScreen() {
       });
 
       if (result?.status === "complete") {
+        const keyPair = await generateKeyPair();
+        const publicKey = await exportPublicKey(keyPair.publicKey);
+        const privateKey = await exportPrivateKey(keyPair.privateKey);
+
         await setActiveSignUp({
           session: result.createdSessionId,
         });
 
+        savePrivateKey(result.createdUserId!, privateKey);
+
         await createUser({
           clerkId: result.createdUserId!,
           username,
-          publicKey: "",
+          publicKey,
         });
 
         navigate("/chat");
