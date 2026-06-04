@@ -11,8 +11,8 @@ import {
   decryptMessage,
   importPublicKey,
   importPrivateKey,
-  getPrivateKey,
 } from "@/lib/crypto";
+import { getPrivateKey } from "@/lib/keyStorage";
 
 console.count("ChatWindow Render");
 
@@ -56,7 +56,7 @@ export default function ChatWindow() {
     async function loadMessages() {
       if (!user?.id) return;
 
-      const storedPrivateKey = getPrivateKey(user.id);
+      const storedPrivateKey = await getPrivateKey(user.id);
 
       if (!storedPrivateKey) {
         setError(
@@ -66,8 +66,7 @@ export default function ChatWindow() {
       }
 
       const privateKey = await importPrivateKey(storedPrivateKey);
-      console.log("private key");
-      console.log("Decrypting", messages.length);
+
       
       if (!messages.length) {
         setDecryptedMessages([]);

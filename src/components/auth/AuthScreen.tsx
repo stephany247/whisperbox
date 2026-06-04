@@ -7,9 +7,10 @@ import { Eye, EyeOff, Info } from "lucide-react";
 import {
   exportPrivateKey,
   exportPublicKey,
-  savePrivateKey,
+  // savePrivateKey,/
   generateKeyPair,
 } from "@/lib/crypto";
+import { savePrivateKey } from "@/lib/keyStorage";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export default function AuthScreen() {
           session: result.createdSessionId,
         });
 
-        savePrivateKey(result.createdUserId!, privateKey);
+        await savePrivateKey(result.createdUserId!, privateKey);
 
         await createUser({
           clerkId: result.createdUserId!,

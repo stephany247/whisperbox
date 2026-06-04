@@ -55,13 +55,13 @@ export async function importPrivateKey(privateKeyB64: string) {
   );
 }
 
-export function savePrivateKey(userId: string, privateKey: string) {
-  localStorage.setItem(`privateKey:${userId}`, privateKey);
-}
+// export function savePrivateKey(userId: string, privateKey: string) {
+//   localStorage.setItem(`privateKey:${userId}`, privateKey);
+// }
 
-export function getPrivateKey(userId: string) {
-  return localStorage.getItem(`privateKey:${userId}`);
-}
+// export function getPrivateKey(userId: string) {
+//   return localStorage.getItem(`privateKey:${userId}`);
+// }
 
 export async function encryptMessage(
   plaintext: string,
