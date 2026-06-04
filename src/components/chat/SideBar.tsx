@@ -73,11 +73,11 @@ export default function Sidebar() {
             }}
             className={`w-full flex items-center gap-3 p-4 transition ${
               activeContact?._id === contact._id
-                ? "bg-accent/10"
+                ? "bg-accent-dim/50"
                 : "hover:bg-muted"
             }`}
           >
-            <div className="size-10 rounded-full bg-muted flex items-center justify-center">
+            <div className="size-10 rounded-full bg-accent-glow flex items-center justify-center">
               {contact.username[0].toUpperCase()}
             </div>
 

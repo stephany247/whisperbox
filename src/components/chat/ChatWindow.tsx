@@ -175,7 +175,7 @@ export default function ChatWindow() {
 
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+          <div className="flex size-10 items-center justify-center rounded-full bg-accent-glow">
             {activeContact.username[0].toUpperCase()}
           </div>
 
@@ -192,10 +192,10 @@ export default function ChatWindow() {
 
       {/* MESSAGES */}
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mb-6 flex justify-center">
-          <div className="rounded-xl border border-border bg-card px-4 py-3 text-center text-sm">
-            Messages are encrypted end-to-end. Only you and{" "}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="mb-4 flex justify-center">
+          <div className="rounded-lg border border-border bg-card px-4 py-2 text-center text-sm">
+            Messages are encrypted End-to-End. Only you and{" "}
             {activeContact.username} can read them.
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function ChatWindow() {
                 className={`flex ${mine ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[70%] rounded-lg px-4 py-3 ${
                     mine
                       ? "bg-accent text-black"
                       : "border border-border bg-card"
