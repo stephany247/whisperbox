@@ -9,4 +9,18 @@ export default defineSchema({
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_username", ["username"]),
+
+  messages: defineTable({
+    senderId: v.string(),
+    receiverId: v.string(),
+
+    ciphertext: v.string(),
+    senderEncryptedKey: v.string(),
+    receiverEncryptedKey: v.string(),
+    iv: v.string(),
+
+    createdAt: v.number(),
+  })
+    .index("by_sender", ["senderId"])
+    .index("by_receiver", ["receiverId"]),
 });

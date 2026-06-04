@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import AuthScreen from "@/components/auth/AuthScreen";
-import Chat from "@/components/ChatWindow";
+import Chat from "@/components/chat/ChatWindow";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "./components/chat/SideBar";
 

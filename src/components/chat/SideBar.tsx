@@ -67,7 +67,10 @@ export default function Sidebar() {
         {filteredContacts.map((contact) => (
           <button
             key={contact._id}
-            onClick={() => setActiveContact(contact)}
+            onClick={() => {
+              setActiveContact(contact);
+              console.log("clicked", contact);
+            }}
             className={`w-full flex items-center gap-3 p-4 transition ${
               activeContact?._id === contact._id
                 ? "bg-accent/10"
