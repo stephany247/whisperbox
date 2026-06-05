@@ -12,9 +12,8 @@ import {
   importPublicKey,
   importPrivateKey,
 } from "@/lib/crypto";
-import { getPrivateKey } from "@/lib/keyStorage";
-
-console.count("ChatWindow Render");
+import { decryptPrivateKey, getPrivateKey } from "@/lib/keyStorage";
+import { getSessionPassword } from "@/lib/sessionKeyStore";
 
 export default function ChatWindow() {
   const { user } = useUser();
@@ -58,6 +57,17 @@ export default function ChatWindow() {
 
       const storedPrivateKey = await getPrivateKey(user.id);
 
+      const password = getSessionPassword();
+
+      if (!password) {
+        setError("Session expired. Please sign in again.");
+        return;
+      }
+
+      const privateKeyPem = await decryptPrivateKey(storedPrivateKey, password);
+
+      const privateKey = await importPrivateKey(privateKeyPem);
+
       if (!storedPrivateKey) {
         setError(
           "Private key not found on this device. Messages cannot be decrypted.",
@@ -65,9 +75,7 @@ export default function ChatWindow() {
         return;
       }
 
-      const privateKey = await importPrivateKey(storedPrivateKey);
 
-      
       if (!messages.length) {
         setDecryptedMessages([]);
         return;
@@ -88,8 +96,6 @@ export default function ChatWindow() {
               privateKey,
             );
 
-            console.log("Decrypted:", text);
-
             return {
               ...msg,
               text,
@@ -99,19 +105,16 @@ export default function ChatWindow() {
 
             return {
               ...msg,
-              text: "[Unable to decrypt]",
+              text: `🔒 Unable to decrypt message\nThis device does not have the required private key.`,
             };
           }
         }),
       );
-      console.log("decrypted");
       setDecryptedMessages(decrypted);
     }
 
     loadMessages();
   }, [messagesQuery, user?.id]);
-
-  // console.log("messages", messages.length);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,16 +127,13 @@ export default function ChatWindow() {
       setError("");
       if (!currentUser) return null;
       const senderPublicKey = await importPublicKey(currentUser.publicKey);
-      console.log("sender public key");
       const recipientPublicKey = await importPublicKey(activeContact.publicKey);
-      console.log("receiver public key");
 
       const encrypted = await encryptMessage(
         message,
         recipientPublicKey,
         senderPublicKey,
       );
-      console.log("msg encrypted");
 
       await sendMessageMutation({
         senderId: user.id,
@@ -143,7 +143,6 @@ export default function ChatWindow() {
         receiverEncryptedKey: encrypted.receiverEncryptedKey,
         iv: encrypted.iv,
       });
-      console.log("msg sent");
 
       setMessage("");
     } catch (err) {

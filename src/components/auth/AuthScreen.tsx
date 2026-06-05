@@ -7,10 +7,10 @@ import { Eye, EyeOff, Info } from "lucide-react";
 import {
   exportPrivateKey,
   exportPublicKey,
-  // savePrivateKey,/
   generateKeyPair,
 } from "@/lib/crypto";
-import { savePrivateKey } from "@/lib/keyStorage";
+import { encryptPrivateKey, savePrivateKey } from "@/lib/keyStorage";
+import { setSessionPassword } from "@/lib/sessionKeyStore";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
@@ -52,6 +52,7 @@ export default function AuthScreen() {
         identifier: username,
         password,
       });
+      setSessionPassword(password);
 
       if (isSignedIn) {
         navigate("/chat");
@@ -89,8 +90,10 @@ export default function AuthScreen() {
           session: result.createdSessionId,
         });
 
-        await savePrivateKey(result.createdUserId!, privateKey);
+        const encryptedKeyData = await encryptPrivateKey(privateKey, password);
 
+        await savePrivateKey(result.createdUserId!, encryptedKeyData);
+        setSessionPassword(password);
         await createUser({
           clerkId: result.createdUserId!,
           username,
