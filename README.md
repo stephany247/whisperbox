@@ -1,73 +1,188 @@
-# React + TypeScript + Vite
+# WhisperBox 🔐
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+WhisperBox is a client-side end-to-end encrypted messaging application built with React, Convex, Clerk Authentication, IndexedDB, and the Web Crypto API.
 
-Currently, two official plugins are available:
+Messages are encrypted on the sender's device before being sent to the backend. Convex stores only encrypted data and never has access to message contents or private keys.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Architecture Diagram
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+┌──────────────────────────────────────────────────────────┐
+│                     CLIENT (Browser)                     │
+│                                                          │
+│  React + TypeScript + Clerk + Zustand                   │
+│                                                          │
+│  ┌────────────┐    ┌──────────────┐    ┌─────────────┐   │
+│  │ Auth Layer │    │ Chat Layer   │    │ Key Manager │   │
+│  └────────────┘    └──────────────┘    └─────────────┘   │
+│          │                  │                  │          │
+│          ▼                  ▼                  ▼          │
+│   Web Crypto API     Message Encryption    IndexedDB     │
+│                                                          │
+│   RSA-OAEP Key Exchange                                 │
+│   AES-256-GCM Message Encryption                        │
+│                                                          │
+└───────────────────────┬──────────────────────────────────┘
+                        │
+                        │ Encrypted Payload Only
+                        ▼
+┌──────────────────────────────────────────────────────────┐
+│                         CONVEX                           │
+│                                                          │
+│  Users                                                   │
+│  ├── clerkId                                             │
+│  ├── username                                            │
+│  └── publicKey                                           │
+│                                                          │
+│  Messages                                                │
+│  ├── ciphertext                                          │
+│  ├── senderEncryptedKey                                 │
+│  ├── receiverEncryptedKey                               │
+│  └── iv                                                  │
+│                                                          │
+│  No plaintext messages stored                            │
+│  No private keys stored                                  │
+└──────────────────────────────────────────────────────────┘
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Encryption Flow
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Sending Messages
+
+1. Generate a random AES-256-GCM key.
+2. Encrypt the plaintext message using AES-GCM.
+3. Encrypt the AES key using the sender's RSA public key.
+4. Encrypt the same AES key using the recipient's RSA public key.
+5. Send ciphertext, encrypted AES keys, and IV to Convex.
+6. Convex stores encrypted data only.
+
+### Receiving Messages
+
+1. Fetch encrypted messages from Convex.
+2. Retrieve the user's encrypted private key from IndexedDB.
+3. Unlock and decrypt the private key using the user's recovery passphrase.
+4. Decrypt the AES key using RSA-OAEP.
+5. Decrypt the message ciphertext using AES-GCM.
+6. Display plaintext only on the recipient's device.
+
+---
+
+## Key Management
+
+| Key             | Generated By          | Stored Where                     | Visibility         |
+| --------------- | --------------------- | -------------------------------- | ------------------ |
+| RSA Public Key  | Browser               | Convex                           | Public             |
+| RSA Private Key | Browser               | Encrypted in IndexedDB           | User Only          |
+| AES Session Key | Browser (per message) | Encrypted inside message payload | Sender & Recipient |
+
+### Private Key Security
+
+Private keys are:
+
+* Generated locally using the Web Crypto API.
+* Never transmitted to Convex.
+* Encrypted before storage using AES-GCM.
+* Protected by a recovery passphrase.
+* Stored in IndexedDB only.
+* Decrypted only when needed for message decryption.
+
+---
+
+## Security Decisions
+
+### Implemented
+
+* End-to-end encryption using RSA-OAEP and AES-256-GCM.
+* Client-side key generation.
+* Encrypted private-key storage.
+* Recovery passphrase protection.
+* HTTPS transport.
+* IndexedDB storage.
+* Convex stores ciphertext only.
+* No plaintext messages leave the browser.
+* Graceful handling of decryption failures.
+
+### Additional Protections
+
+* Unique AES key generated for every message.
+* Random IV generated for every encryption operation.
+* AES-GCM provides authenticated encryption and tamper detection.
+
+---
+
+## Security Trade-offs
+
+### Current Trade-offs
+
+* Keys are device-specific.
+* No automatic multi-device key synchronization.
+* No public-key fingerprint verification.
+* No forward secrecy implementation.
+* No key rotation UI.
+
+### Future Improvements
+
+* ECDH-based forward secrecy.
+* Device synchronization using encrypted key backups.
+* Public-key fingerprint verification.
+* Key rotation support.
+* Replay attack protection.
+
+---
+
+## Known Limitations
+
+1. No group messaging.
+2. No encrypted file sharing.
+3. No message expiration.
+4. No automatic key synchronization across devices.
+5. No ECDH forward secrecy implementation.
+
+---
+
+## Tech Stack
+
+| Layer                 | Technology                |
+| --------------------- | ------------------------- |
+| Frontend              | React + TypeScript + Vite |
+| Authentication        | Clerk                     |
+| Backend               | Convex                    |
+| Encryption            | Web Crypto API            |
+| Symmetric Encryption  | AES-256-GCM               |
+| Asymmetric Encryption | RSA-OAEP                  |
+| Client Storage        | IndexedDB                 |
+| State Management      | Zustand                   |
+| Styling               | Tailwind CSS              |
+
+---
+
+## Running Locally
+
+```bash
+git clone https://github.com/stephany247/whisperbox
+cd whisperbox
+
+npm install
+
+npm run dev
 ```
+
+Open:
+
+http://localhost:5173
+
+---
+
+## Project Goals
+
+* Ensure the server never sees plaintext.
+* Keep private keys exclusively on user devices.
+* Demonstrate practical end-to-end encryption using browser-native cryptography.
+* Provide a secure messaging experience with a clean and modern UI.
+
+---
+
