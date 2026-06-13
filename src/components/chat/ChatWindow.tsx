@@ -113,7 +113,7 @@ export default function ChatWindow() {
     loadMessages();
   }, [messagesQuery, user?.id]);
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!message.trim() || !activeContact || !user) {

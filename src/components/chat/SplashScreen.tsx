@@ -1,11 +1,10 @@
-import { Lock } from "lucide-react";
 import Logo from "../ui/Logo";
 
 export default function SplashScreen() {
   return (
     <div className="flex h-dvh items-center justify-center bg-background">
       <div className="text-center">
-       <Logo />
+        <Logo />
 
         <div className="mt-6 flex justify-center gap-1">
           <span className="size-2 animate-bounce rounded-full bg-accent" />
