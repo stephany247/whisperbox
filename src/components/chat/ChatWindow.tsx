@@ -64,10 +64,6 @@ export default function ChatWindow() {
         return;
       }
 
-      const privateKeyPem = await decryptPrivateKey(storedPrivateKey, password);
-
-      const privateKey = await importPrivateKey(privateKeyPem);
-
       if (!storedPrivateKey) {
         setError(
           "Private key not found on this device. Messages cannot be decrypted.",
@@ -75,11 +71,14 @@ export default function ChatWindow() {
         return;
       }
 
+      const privateKeyPem = await decryptPrivateKey(storedPrivateKey, password);
+      const privateKey = await importPrivateKey(privateKeyPem);
 
       if (!messages.length) {
         setDecryptedMessages([]);
         return;
       }
+
       const decrypted = await Promise.all(
         messages.map(async (msg) => {
           try {
