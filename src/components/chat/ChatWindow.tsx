@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
-import { Lock, Send, AlertTriangle } from "lucide-react";
+import { Lock, Send, AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { api } from "../../../convex/_generated/api";
 import { useChatStore } from "@/store/chatStore";
@@ -17,7 +17,7 @@ import { getSessionPassword } from "@/lib/sessionKeyStore";
 
 export default function ChatWindow() {
   const { user } = useUser();
-  const { activeContact } = useChatStore();
+  const { activeContact, setActiveContact } = useChatStore();
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -166,11 +166,19 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-dvh flex-1 flex-col">
       {/* HEADER */}
 
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Back to contacts"
+            onClick={() => setActiveContact(null)}
+            className="md:hidden flex size-10 items-center justify-center rounded-full hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="size-6" />
+          </button>
           <div className="flex size-10 items-center justify-center rounded-full bg-accent-glow">
             {activeContact.username[0].toUpperCase()}
           </div>
@@ -180,7 +188,7 @@ export default function ChatWindow() {
 
             <div className="flex items-center gap-1 text-xs text-accent">
               <Lock className="size-3" />
-              End-to-end encrypted
+              End-to-End encrypted
             </div>
           </div>
         </div>
@@ -206,7 +214,7 @@ export default function ChatWindow() {
                 className={`flex ${mine ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-2 sm:px-4 sm:py-3 ${
                     mine
                       ? "bg-accent text-black"
                       : "border border-border bg-card"
@@ -214,7 +222,7 @@ export default function ChatWindow() {
                 >
                   <p>{msg.text}</p>
 
-                  <p className="mt-1 text-xs opacity-70">
+                  <p className="mt-1 text-xs opacity-70 justify-self-end">
                     {new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -244,7 +252,7 @@ export default function ChatWindow() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={`Message ${activeContact.username}...`}
-            className="auth-input flex-1"
+            className="auth-input flex-1 min-h-12"
           />
 
           <button

@@ -4,14 +4,18 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useChatStore } from "@/store/chatStore";
 import { clearSessionPassword } from "@/lib/sessionKeyStore";
+import { useState } from "react";
 
 export default function Sidebar() {
   const { user } = useUser();
   const { signOut } = useClerk();
-
   const { search, setSearch, activeContact, setActiveContact } = useChatStore();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const contacts = useQuery(api.users.getUsers) ?? [];
+  const contactsQuery = useQuery(api.users.getUsers);
+
+  const isLoading = contactsQuery === undefined;
+  const contacts = contactsQuery ?? [];
 
   const filteredContacts = contacts.filter(
     (contact) =>
@@ -20,7 +24,7 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="w-80 border-r border-border bg-card flex flex-col">
+    <aside className="w-full md:w-80 h-full sm:border-r border-border bg-card flex flex-col">
       {/* Header */}
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between">
@@ -41,9 +45,18 @@ export default function Sidebar() {
 
           <button
             aria-label="Refresh"
+            onClick={() => {
+              setRefreshing(true);
+
+              setTimeout(() => {
+                setRefreshing(false);
+              }, 1000);
+            }}
             className="p-2 hover:bg-muted rounded-lg"
           >
-            <RefreshCw className="size-4" />
+            <RefreshCw
+              className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -65,38 +78,50 @@ export default function Sidebar() {
 
       {/* Contacts */}
       <div className="flex-1 overflow-y-auto">
-        {filteredContacts.map((contact) => (
-          <button
-            key={contact._id}
-            onClick={() => {
-              setActiveContact(contact);
-              console.log("clicked", contact);
-            }}
-            className={`w-full flex items-center gap-3 p-4 transition ${
-              activeContact?._id === contact._id
-                ? "bg-accent-dim/50"
-                : "hover:bg-muted"
-            }`}
-          >
-            <div className="size-10 rounded-full bg-accent-glow flex items-center justify-center">
-              {contact.username[0].toUpperCase()}
-            </div>
+        {isLoading ? (
+          <div className="p-4 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-12 animate-pulse rounded-md bg-muted" />
+            ))}
+          </div>
+        ) : (
+          filteredContacts.map((contact) => (
+            <button
+              key={contact._id}
+              onClick={() => {
+                setActiveContact(contact);
+              }}
+              className={`w-full flex items-center gap-3 p-4 transition ${
+                activeContact?._id === contact._id
+                  ? "bg-accent-dim/50"
+                  : "hover:bg-muted"
+              }`}
+            >
+              <div className="size-10 rounded-full bg-accent-glow flex items-center justify-center">
+                {contact.username[0].toUpperCase()}
+              </div>
 
-            <div className="flex-1 text-left">
-              <p className="font-medium">{contact.username}</p>
-            </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">{contact.username}</p>
+              </div>
 
-            <Lock className="size-3 text-accent" />
-          </button>
-        ))}
+              <Lock className="size-3 text-accent" />
+            </button>
+          ))
+        )}
+        {!isLoading && filteredContacts.length === 0 && (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            No users found
+          </div>
+        )}
       </div>
 
       {/* Logout */}
       <div className="border-t border-border">
         <button
-          onClick={() => {
+          onClick={async () => {
             clearSessionPassword();
-            signOut();
+            await signOut();
           }}
           className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 px-4 py-3 hover:bg-destructive/30 transition duration-200 cursor-pointer"
         >
