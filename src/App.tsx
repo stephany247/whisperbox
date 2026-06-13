@@ -8,7 +8,6 @@ import Sidebar from "./components/chat/SideBar";
 function App() {
   return (
     <Routes>
-      {/* <Route path="/login" element={<AuthScreen />} /> */}
       <Route path="/" element={<AuthScreen />} />
 
       <Route

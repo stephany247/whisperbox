@@ -13,7 +13,7 @@ export default function ProtectedRoute({
   }
 
   if (!isSignedIn) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/" />;
   }
 
   return <>{children}</>;
