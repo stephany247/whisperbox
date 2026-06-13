@@ -91,7 +91,7 @@ export default function Sidebar() {
               onClick={() => {
                 setActiveContact(contact);
               }}
-              className={`w-full flex items-center gap-3 p-4 transition ${
+              className={`w-full flex items-center gap-3 p-4 transition cursor-pointer ${
                 activeContact?._id === contact._id
                   ? "bg-accent-dim/50"
                   : "hover:bg-muted"

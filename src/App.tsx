@@ -18,7 +18,7 @@ function App() {
         element={
           <ProtectedRoute>
             <div className="h-screen overflow-hidden">
-              <div className="hidden sm:flex h-full">
+              <div className="hidden md:flex h-full">
                 <Sidebar />
                 <Chat />
               </div>
