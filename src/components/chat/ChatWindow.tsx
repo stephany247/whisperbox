@@ -56,11 +56,10 @@ export default function ChatWindow() {
       if (!user?.id) return;
 
       const storedPrivateKey = await getPrivateKey(user.id);
-
       const password = getSessionPassword();
 
       if (!password) {
-        setError("Session expired. Please sign in again.");
+        // setError("Session expired. Please sign in again.");
         return;
       }
 
@@ -78,7 +77,6 @@ export default function ChatWindow() {
         setDecryptedMessages([]);
         return;
       }
-
       const decrypted = await Promise.all(
         messages.map(async (msg) => {
           try {

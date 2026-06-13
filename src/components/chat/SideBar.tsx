@@ -3,6 +3,7 @@ import { useUser, useClerk } from "@clerk/clerk-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useChatStore } from "@/store/chatStore";
+import { clearSessionPassword } from "@/lib/sessionKeyStore";
 
 export default function Sidebar() {
   const { user } = useUser();
@@ -93,7 +94,10 @@ export default function Sidebar() {
       {/* Logout */}
       <div className="border-t border-border">
         <button
-          onClick={() => signOut()}
+          onClick={() => {
+            clearSessionPassword();
+            signOut();
+          }}
           className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 px-4 py-3 hover:bg-destructive/30 transition duration-200 cursor-pointer"
         >
           <LogOut className="size-4" />

@@ -1,13 +1,20 @@
-let sessionPassword: string | null = null;
+const SESSION_PASSWORD_KEY = "whisperbox-session";
 
 export function setSessionPassword(password: string) {
-  sessionPassword = password;
+  sessionStorage.setItem(
+    SESSION_PASSWORD_KEY,
+    password,
+  );
 }
 
 export function getSessionPassword() {
-  return sessionPassword;
+  return sessionStorage.getItem(
+    SESSION_PASSWORD_KEY,
+  );
 }
 
 export function clearSessionPassword() {
-  sessionPassword = null;
+  sessionStorage.removeItem(
+    SESSION_PASSWORD_KEY,
+  );
 }
