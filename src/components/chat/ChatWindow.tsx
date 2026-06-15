@@ -22,6 +22,9 @@ export default function ChatWindow() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [decryptedMessages, setDecryptedMessages] = useState<any[]>([]);
+  const [isDecrypting, setIsDecrypting] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +44,7 @@ export default function ChatWindow() {
       : "skip",
   );
 
+  const messagesLoading = messagesQuery === undefined;
   const messages = messagesQuery ?? [];
 
   //auto-scroll
@@ -54,64 +58,74 @@ export default function ChatWindow() {
   useEffect(() => {
     async function loadMessages() {
       if (!user?.id) return;
+      setIsDecrypting(!hasLoadedOnce);
 
-      const storedPrivateKey = await getPrivateKey(user.id);
-      const password = getSessionPassword();
+      try {
+        const storedPrivateKey = await getPrivateKey(user.id);
+        const password = getSessionPassword();
 
-      if (!password) {
-        // setError("Session expired. Please sign in again.");
-        return;
-      }
+        if (!password) {
+          // setError("Session expired. Please sign in again.");
+          return;
+        }
 
-      if (!storedPrivateKey) {
-        setError(
-          "Private key not found on this device. Messages cannot be decrypted.",
+        if (!storedPrivateKey) {
+          setError(
+            "Private key not found on this device. Messages cannot be decrypted.",
+          );
+          return;
+        }
+
+        const privateKeyPem = await decryptPrivateKey(
+          storedPrivateKey,
+          password,
         );
-        return;
+        const privateKey = await importPrivateKey(privateKeyPem);
+
+        if (!messages.length) {
+          setDecryptedMessages([]);
+          setHasLoadedOnce(true);
+          return;
+        }
+        const decrypted = await Promise.all(
+          messages.map(async (msg) => {
+            try {
+              const encryptedKey =
+                msg.senderId === user?.id
+                  ? msg.senderEncryptedKey
+                  : msg.receiverEncryptedKey;
+              const text = await decryptMessage(
+                {
+                  ciphertext: msg.ciphertext,
+                  encryptedKey,
+                  iv: msg.iv,
+                },
+                privateKey,
+              );
+
+              return {
+                ...msg,
+                text,
+              };
+            } catch (err) {
+              console.error("Decrypt failed:", err);
+
+              return {
+                ...msg,
+                text: `🔒 Unable to decrypt message\nThis device does not have the required private key.`,
+              };
+            }
+          }),
+        );
+        setDecryptedMessages(decrypted);
+        setHasLoadedOnce(true);
+      } finally {
+        setIsDecrypting(false);
       }
-
-      const privateKeyPem = await decryptPrivateKey(storedPrivateKey, password);
-      const privateKey = await importPrivateKey(privateKeyPem);
-
-      if (!messages.length) {
-        setDecryptedMessages([]);
-        return;
-      }
-      const decrypted = await Promise.all(
-        messages.map(async (msg) => {
-          try {
-            const encryptedKey =
-              msg.senderId === user?.id
-                ? msg.senderEncryptedKey
-                : msg.receiverEncryptedKey;
-            const text = await decryptMessage(
-              {
-                ciphertext: msg.ciphertext,
-                encryptedKey,
-                iv: msg.iv,
-              },
-              privateKey,
-            );
-
-            return {
-              ...msg,
-              text,
-            };
-          } catch (err) {
-            console.error("Decrypt failed:", err);
-
-            return {
-              ...msg,
-              text: `🔒 Unable to decrypt message\nThis device does not have the required private key.`,
-            };
-          }
-        }),
-      );
-      setDecryptedMessages(decrypted);
     }
 
     loadMessages();
-  }, [messagesQuery, user?.id]);
+  }, [messages, user?.id]);
 
   const handleSend = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -119,6 +133,7 @@ export default function ChatWindow() {
     if (!message.trim() || !activeContact || !user) {
       return;
     }
+    setIsSending(true);
 
     try {
       setError("");
@@ -146,6 +161,8 @@ export default function ChatWindow() {
       console.error(err);
 
       setError("Failed to send message");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -204,37 +221,75 @@ export default function ChatWindow() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {decryptedMessages.map((msg) => {
-            const mine = msg.senderId === user?.id;
-
-            return (
+        {messagesLoading || isDecrypting ? (
+          <div className="space-y-4">
+            {[...Array(6)].map((_, i) => (
               <div
-                key={msg._id}
-                className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                key={i}
+                className={`flex ${
+                  i % 2 === 0 ? "justify-start" : "justify-end"
+                }`}
               >
                 <div
-                  className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-2 sm:px-4 sm:py-3 ${
-                    mine
-                      ? "bg-accent text-black"
-                      : "border border-border bg-card"
+                  className={`h-12 ${
+                    i % 2 === 0 ? "w-40" : "w-56"
+                  } animate-pulse rounded-2xl bg-muted`}
+                />
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="max-w-sm text-center">
+              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
+                <Lock className="size-7 text-accent" />
+              </div>
+
+              <h3 className="mb-2 text-lg font-semibold">
+                End-to-End Encrypted
+              </h3>
+
+              <p className="text-sm text-muted-foreground">
+                Start your conversation with{" "}
+                <span className="font-medium">{activeContact.username}</span>.
+                Messages are encrypted before leaving your device.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {decryptedMessages.map((msg) => {
+              const mine = msg.senderId === user?.id;
+
+              return (
+                <div
+                  key={msg._id}
+                  className={`flex animate-in fade-in duration-300 ${
+                    mine ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <p>{msg.text}</p>
+                  <div
+                    className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-2 sm:px-4 sm:py-3 ${
+                      mine
+                        ? "bg-accent text-black"
+                        : "border border-border bg-card"
+                    }`}
+                  >
+                    <p>{msg.text}</p>
 
-                  <p className="mt-1 text-xs opacity-70 justify-self-end">
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                    <p className="mt-1 text-xs opacity-70 text-right">
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div ref={messagesEndRef} />
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* INPUT */}
@@ -258,9 +313,14 @@ export default function ChatWindow() {
           <button
             aria-label="Send message"
             type="submit"
-            className="flex size-12 items-center justify-center rounded-xl bg-accent text-black"
+            disabled={!message.trim() || isSending}
+            className="flex size-12 items-center justify-center rounded-xl bg-accent text-black disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Send className="size-6" />
+            {isSending ? (
+              <div className="size-5 animate-spin rounded-full border-2 border-black border-t-transparent" />
+            ) : (
+              <Send className="size-6" />
+            )}
           </button>
         </form>
 
