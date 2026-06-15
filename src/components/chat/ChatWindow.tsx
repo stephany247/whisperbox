@@ -63,9 +63,12 @@ export default function ChatWindow() {
       try {
         const storedPrivateKey = await getPrivateKey(user.id);
         const password = getSessionPassword();
+        console.log("Session password:", getSessionPassword());
 
         if (!password) {
-          // setError("Session expired. Please sign in again.");
+          if (hasLoadedOnce) {
+            setError("Your secure session has expired. Please sign in again.");
+          }
           return;
         }
 
